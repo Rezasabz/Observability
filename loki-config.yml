@@ -1,0 +1,60 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  http_server_read_timeout: 5m
+  http_server_write_timeout: 5m
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: memberlist          # ← رینگ سراسری روی memberlist
+
+memberlist:
+  join_members: []
+  abort_if_cluster_join_fails: false
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb                # ← برای structured metadata/OTLP لازم
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  filesystem:
+    directory: /loki/chunks
+  tsdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/index_cache
+    cache_ttl: 24h
+
+# رینگ ماژول‌ها را دیگر جدا تعریف نکن؛ common.ring کافی است.
+distributor: {}
+ingester:
+  chunk_target_size: 1048576
+  max_chunk_age: 1h
+ruler:
+  alertmanager_url: http://localhost:9093
+  enable_api: true
+query_scheduler: {}
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 5m
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+analytics:
+  reporting_enabled: false

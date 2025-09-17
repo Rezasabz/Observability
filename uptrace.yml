@@ -1,0 +1,143 @@
+service:
+  # برای محیط آفلاین/POC «development» یا «production» هم می‌تونه باشه؛ «hosted» معمولاً برای کلودشونه
+  env: development
+  secret: registrationTools_secret   # حتماً عوضش کن
+
+site:
+  url: http://localhost:14318
+  ingest_url: http://uptrace:80?grpc=4317
+
+
+listen:
+  http:
+    addr: :80      # داخل کانتینر
+  grpc:
+    addr: :4317    # داخل کانتینر
+  #tls:
+  #  cert_file: /etc/uptrace/server.crt
+  #  key_file: /etc/uptrace/server.key
+
+auth: {}
+
+seed_data:
+  update: true
+  delete: true
+
+  users:
+    - key: user1
+      name: Admin
+      email: admin@uptrace.local
+      password: 1qaz!QAZ
+      email_confirmed: true
+
+  user_tokens:
+    - key: user_token1
+      user_key: user1
+      token: user1_secret
+
+  orgs:
+    - key: org1
+      name: Org1
+
+  org_users:
+    - key: org_user1
+      org_key: org1
+      user_key: user1
+      role: owner
+
+  projects:
+    - key: registrationTools
+      name: RegistrationTools
+      org_key: org1
+
+  project_tokens:
+    - key: registrationTools_token1
+      project_key: registrationTools
+      token: registrationTools_secret   # ← این را در کالکتور هم استفاده کردیم
+
+  project_users:
+    - key: project_user1
+      project_key: registrationTools
+      org_user_key: org_user1
+      perm_level: admin
+
+ch_cluster:
+  cluster: uptrace1
+  replicated: false
+  distributed: false
+  shards:
+    - replicas:
+        - addr: clickhouse:9000
+          database: uptrace
+          user: uptrace
+          password: uptrace
+          dial_timeout: 3s
+          write_timeout: 5s
+          max_retries: 3
+          max_execution_time: 15s
+
+pg:
+  addr: postgres:5432
+  user: uptrace
+  password: uptrace
+  database: uptrace
+
+ch_schema:
+  compression: ZSTD(1)
+  spans_index: { storage_policy: default }
+  spans_data: { storage_policy: default }
+  span_links: { storage_policy: default }
+  logs_index: { storage_policy: default }
+  logs_data: { storage_policy: default }
+  events_index: { storage_policy: default }
+  events_data: { storage_policy: default }
+  metrics: { storage_policy: default }
+
+redis_cache:
+  addrs:
+    1: redis:6379
+  username: ""
+  password: ""
+  db: 0
+
+certmagic:
+  enabled: false
+  staging_ca: false
+  http_challenge_addr: :80
+
+mailer:
+  smtp:
+    enabled: false
+    host: localhost
+    port: 1025
+    username: mailhog
+    password: mailhog
+    from: no-reply@uptrace.local
+
+spans: {}
+span_links: {}
+logs: {}
+events: {}
+metrics: {}
+
+trace: {}
+
+alerting: {}
+service_graph: {}
+sourcemaps:
+  #disabled: true   # اگر frontend sourcemap نمی‌خوای، فعالش کن
+
+self_monitoring:
+  # Uptrace خودش داده‌هاش رو به همین پروژه می‌فرسته
+  dsn: http://registrationTools_secret@uptrace:80?grpc=14317
+  tls:
+   insecure_skip_verify: true
+
+telegram:
+  bot_token: ''
+
+logging:
+  level: INFO
+
+license:
+  key: ''

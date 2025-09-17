@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+
+# OpenTelemetry (روش استاندارد + auto-instrumentation)
+opentelemetry-distro
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-logging

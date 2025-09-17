@@ -1,0 +1,101 @@
+processors:
+  resourcedetection:
+    detectors: [env, system]
+  cumulativetodelta: {}
+  batch:
+    send_batch_size: 10000
+    timeout: 10s
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  hostmetrics:
+    scrapers:
+      cpu: {}
+      disk: {}
+      filesystem: {}
+      load: {}
+      memory: {}
+      network: {}
+      paging: {}
+
+exporters:
+  # برای دیباگ: span/metric را در لاگ Collector چاپ می‌کند
+  debug: {}
+
+  # Uptrace (OTLP gRPC)
+  otlp/uptrace:
+    endpoint: uptrace:4317
+    tls:
+      insecure: true
+    headers:
+      uptrace-dsn: "http://registrationTools_secret@uptrace:80?grpc=4317"
+    # اختیاری اما مفید:
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 10240
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  # 🔵 Tempo (OTLP gRPC) — جدید
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+    # اختیاری: همان تنظیمات صف/ریتری
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 10240
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  # Logs به Loki (بدون تغییر)
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    tls:
+      insecure: true
+
+service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      # ⬅️ فن‌اوت به هر دو: Uptrace + Tempo + debug
+      exporters: [otlp/uptrace, otlp/tempo, debug]
+
+    # metrics:
+    #   receivers: [otlp]
+    #   processors: [cumulativetodelta, batch]
+    #   exporters: [otlp/uptrace, debug]
+
+    metrics/host:
+      receivers: [hostmetrics]
+      processors: [cumulativetodelta, batch, resourcedetection]
+      exporters: [otlp/uptrace, debug]
+
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/uptrace, loki, debug]

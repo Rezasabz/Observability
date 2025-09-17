@@ -1,0 +1,41 @@
+# my global config
+global:
+  scrape_interval: 15s # By default, scrape targets every 15 seconds.
+  evaluation_interval: 15s # By default, scrape targets every 15 seconds.
+  # scrape_timeout is set to the global default (10s).
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    monitor: 'uptrace-project'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['localhost:9090']
+  # - job_name: 'node-exporter'
+  #   scrape_interval: 15s
+  #   static_configs:
+  #     - targets: ['host.docker.internal:9100']
+  # - job_name: docker
+  #   static_configs:
+  #     - targets: ['host.docker.internal:9323']
+  # مانیتور خودِ کالکتور (health/telemetry)
+  - job_name: 'otelcol'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['otelcol:8888']
+
+  # متریک‌هایی که کالکتور به عنوان exporter Prometheus اکسپوز کرده
+  # - job_name: 'otelcol-export'
+  #   static_configs:
+  #     - targets: ['otelcol:9464']
+
+# remote_write:
+#   - url: 'http://host.docker.internal:14318/api/v1/prometheus/write'  # تغییر به http
+#     tls_config:
+#       insecure_skip_verify: true
+#     headers:
+#       'uptrace-dsn': 'http://registrationTools_secret@uptrace:80?grpc=4317'
+
