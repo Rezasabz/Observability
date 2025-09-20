@@ -1,31 +1,55 @@
 apiVersion: 1
+
 datasources:
-  # 1) Prometheus مستقیم
   - name: Prometheus
     type: prometheus
+    uid: prometheus
     access: proxy
+    orgId: 1
     url: http://prometheus:9090
+    basicAuth: false
     isDefault: true
-
-  # 2) Uptrace Tempo (Traceها) - این یکی برای دیدن Trace داخل Grafana
-  - name: Uptrace Tempo Project 1
+    version: 1
+    editable: true
+    jsonData:
+      httpMethod: GET
+      exemplarTraceIdDestinations:
+        - datasourceUid: tempo
+          name: trace_id
+  
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    orgId: 1
+    url: http://loki:3100
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      maxLines: 1000
+      tlsSkipVerify: true
+  
+  - name: Tempo
     type: tempo
+    uid: tempo
     access: proxy
-    url: http://uptrace:80/api/tempo/1        # 1 = project_id
-    jsonData:
-      httpHeaderName1: 'Authorization'
-    secureJsonData:
-      httpHeaderValue1: 'Bearer user1_secret' # از seed_data.user_tokens
+    orgId: 1
+    url: http://tempo:3200
+    basicAuth: false
+    isDefault: false
+    version: 1
     editable: true
-
-  # 3) (اختیاری) Prometheus از API Uptrace
-  # - اگر می‌خوای متریک‌ها را از Uptrace بخوانی (نه از Prometheus مستقیم)
-  - name: Uptrace Prometheus Project 1
-    type: prometheus
-    access: proxy
-    url: http://uptrace:80/api/prometheus/1    # 1 = project_id
     jsonData:
-      httpHeaderName1: 'Authorization'
-    secureJsonData:
-      httpHeaderValue1: 'Bearer user1_secret'  # توجه: Bearer، نه DSN
-    editable: true
+      httpMethod: GET
+      serviceMap:
+        datasourceUid: prometheus
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: '-6h'
+        spanEndTimeShift: '6h'
+        filterByTraceID: true
+        filterBySpanID: true
+        tags: [ { key: 'service.name', value: 'job' } ]
+      tlsSkipVerify: true

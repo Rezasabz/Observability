@@ -1,20 +1,21 @@
 services:
   app:
-    image: fastapi-otel:1.0.0
+    image: fastapi-otel:1.0.3
     restart: always
     container_name: fastapi-app
     environment:
-      OTEL_SERVICE_NAME: checkout-api
-      OTEL_SERVICE_VERSION: "1.0.3"
+      OTEL_SERVICE_NAME: checkout-api-3
+      OTEL_SERVICE_VERSION: "1.0.1"
       DEPLOYMENT_ENVIRONMENT: dev
 
-      # اپ به Collector می‌فرستد (نه به Uptrace)
+      # اصلاح شده: اپ به otelcol می‌فرستد (نام سرویس صحیح)
       OTEL_TRACES_EXPORTER: otlp
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otelcol:4317
-      OTEL_EXPORTER_OTLP_HEADERS: uptrace-dsn=http://registrationTools_secret@uptrace:80?grpc=4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otelcol:4317  # ✅ نام سرویس صحیح
+      OTEL_EXPORTER_OTLP_INSECURE: "true"  # ✅ اضافه شد
       OTEL_LOGS_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_PYTHON_METRICS_EXPORTER: otlp
       OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: "true"
 
     ports:
@@ -125,6 +126,7 @@ services:
       - filebeat_custom_network
     depends_on:
       - otelcol
+      - app
 
   grafana:
     image: grafana/grafana:12.0.0
@@ -180,3 +182,4 @@ volumes:
 
 networks:
   filebeat_custom_network:
+  
